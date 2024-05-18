@@ -1,16 +1,16 @@
 import 'package:fire_auth_server_client/app/pages/home_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:fire_auth_server_client/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   static final GlobalKey<FormState> _formStateKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
@@ -111,25 +111,17 @@ class _LoginPageState extends State<LoginPage> {
                                 setState(() => isLoading = true);
 
                                 try {
-                                  await FirebaseAuth.instance
+                                  ref
+                                      .read(authProvider.notifier)
                                       .signInWithEmailAndPassword(
-                                    email: emailController.text,
-                                    password: passwordController.text,
-                                  );
+                                        email: emailController.text,
+                                        password: passwordController.text,
+                                      );
                                 } finally {
                                   setState(() => isLoading = false);
                                 }
 
-                                if (!context.mounted) {
-                                  return;
-                                }
-
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const HomePage()),
-                                  (_) => false,
-                                );
+                                //Go to home page by GoRouter redirect
                               },
                               child: const Text("Entrar"),
                             ),
@@ -146,25 +138,16 @@ class _LoginPageState extends State<LoginPage> {
                                 setState(() => isLoading = true);
 
                                 try {
-                                  await FirebaseAuth.instance
+                                  ref
+                                      .read(authProvider.notifier)
                                       .createUserWithEmailAndPassword(
-                                    email: emailController.text,
-                                    password: passwordController.text,
-                                  );
+                                        email: emailController.text,
+                                        password: passwordController.text,
+                                      );
                                 } finally {
                                   setState(() => isLoading = false);
                                 }
-
-                                if (!context.mounted) {
-                                  return;
-                                }
-
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const HomePage()),
-                                  (_) => false,
-                                );
+                                //Go to home page by GoRouter redirect
                               },
                               child: const Text("Cadastrar"),
                             )

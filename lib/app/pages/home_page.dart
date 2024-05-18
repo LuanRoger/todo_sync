@@ -1,12 +1,13 @@
-import 'package:fire_auth_server_client/app/pages/login_page.dart';
+import 'package:fire_auth_server_client/providers/auth_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final user = FirebaseAuth.instance.currentUser!;
 
@@ -15,21 +16,7 @@ class HomePage extends StatelessWidget {
         title: const Text("Pagina inicial"),
         actions: [
           IconButton(
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-
-              if (!context.mounted) {
-                return;
-              }
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginPage(),
-                ),
-                (_) => false,
-              );
-            },
+            onPressed: () async => await ref.read(authProvider.notifier).signOut(),
             icon: const Icon(Icons.exit_to_app),
           )
         ],
@@ -54,7 +41,6 @@ class HomePage extends StatelessWidget {
                 final problem = snapshot.hasError || !snapshot.hasData;
                 final token = snapshot.data!;
 
-                print(token);
                 return Text(!problem ? token : "Houve um error");
               },
             )
