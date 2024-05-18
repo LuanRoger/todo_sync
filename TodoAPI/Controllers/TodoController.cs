@@ -65,6 +65,27 @@ public class TodoController : ITodoController
         return todo.id;
     }
     
+    public async Task<TodoDto?> ToggleDoneUserTodo(string userId, int todoId)
+    {
+        Todo? todo = await _todoRepository.GetTodoById(todoId);
+        
+        if(todo is null || todo.userId != userId)
+            return null;
+
+        todo.done = !todo.done;
+        await _todoRepository.FlushChanges();
+        
+        TodoDto todoDto = new()
+        {
+            id = todo.id,
+            description = todo.description,
+            done = todo.done,
+            userId = todo.userId,
+            createdAt = todo.createdAt,
+        };
+        return todoDto;
+    }
+    
     public async Task<int?> DeleteUserTodo(string userId, int todoId)
     {
         Todo? todo = await _todoRepository.GetTodoById(todoId);

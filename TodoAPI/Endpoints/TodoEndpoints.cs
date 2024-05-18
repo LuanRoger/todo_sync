@@ -14,6 +14,7 @@ public static class TodoEndpoints
         builder.MapGet("/", GetUserTodosHandler);
         builder.MapPost("/", CreateUserTodoHandler);
         builder.MapDelete("/{id:int}", DeleteUserTodoHandler);
+        builder.MapPost("/{id:int}", ToggleDoneTodoHandler);
 
         return builder;
     }
@@ -61,5 +62,16 @@ public static class TodoEndpoints
         int? deletedTodoId = await controller.DeleteUserTodo(userId, id);
         
         return deletedTodoId is not null ? Results.Ok(deletedTodoId) : Results.NotFound();
+    }
+    
+    private async static Task<IResult> ToggleDoneTodoHandler(HttpContext context,
+        [FromRoute] int id,
+        [FromServices] ITodoController controller)
+    {
+        string userId = FirebaseAuthorizationFilter.ExtractRequestToken(context)!;
+
+        TodoDto? updatedTodo = await controller.ToggleDoneUserTodo(userId, id);
+        
+        return updatedTodo is not null ? Results.Ok(updatedTodo) : Results.NotFound();
     }
 }
