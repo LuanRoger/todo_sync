@@ -1,4 +1,4 @@
-import 'package:fire_auth_server_client/app/pages/home_page.dart';
+import 'package:fire_auth_server_client/app/pages/home_page/home_page.dart';
 import 'package:fire_auth_server_client/app/pages/login_page.dart';
 import 'package:fire_auth_server_client/app/router/pages_routes.dart';
 import 'package:fire_auth_server_client/app/router/pages_routes_name.dart';

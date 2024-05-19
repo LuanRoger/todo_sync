@@ -1,4 +1,4 @@
-import 'package:fire_auth_server_client/app/pages/home_page.dart';
+import 'package:fire_auth_server_client/app/pages/home_page/home_page.dart';
 import 'package:fire_auth_server_client/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
