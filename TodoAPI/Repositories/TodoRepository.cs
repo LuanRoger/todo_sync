@@ -21,10 +21,9 @@ public class TodoRepository : ITodoRepository
     
     public async Task<Todo?> CreateTodo(Todo todo)
     {
-        await _dbContext.todos.AddAsync(todo);
-        await _dbContext.SaveChangesAsync();
+        var newEntity = await _dbContext.todos.AddAsync(todo);
         
-        return todo;
+        return newEntity.Entity;
     }
     
     public async Task<IReadOnlyCollection<Todo>> GetUserTodos(string userId, int page, int pageSize)
@@ -32,7 +31,7 @@ public class TodoRepository : ITodoRepository
         return await _dbContext.todos
             .AsNoTracking()
             .Where(todo => todo.userId == userId)
-            .Skip(page * pageSize)
+            .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
     }

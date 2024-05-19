@@ -5,6 +5,8 @@ namespace TodoAPI.Endpoints.Filters;
 
 public class FirebaseAuthorizationFilter : IEndpointFilter
 {
+    private const string FIREBASE_UID_REQUEST_ITEM_KEY = "FirebaseUid";
+    
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         string? headerToken = ExtractRequestToken(context.HttpContext);
@@ -13,10 +15,17 @@ public class FirebaseAuthorizationFilter : IEndpointFilter
         if (idToken is null)
             return Results.Unauthorized();
 
+        context.HttpContext.Items.Add(FIREBASE_UID_REQUEST_ITEM_KEY, idToken.Uid);
+        
         return await next(context);
     }
+    
+    public static string? GetFirebaseUid(HttpContext context)
+    {
+        return context.Items[FIREBASE_UID_REQUEST_ITEM_KEY] as string;
+    }
 
-    public static string? ExtractRequestToken(HttpContext context)
+    private static string? ExtractRequestToken(HttpContext context)
     {
         bool hasToken = context.Request.Headers
             .TryGetValue(HeadersKeys.FIREBASE_AUTH_HEADER_KEY, out StringValues tokens);

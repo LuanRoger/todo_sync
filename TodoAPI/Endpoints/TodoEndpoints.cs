@@ -23,7 +23,7 @@ public static class TodoEndpoints
         [FromBody] CreateTodoRequest body,
         [FromServices] ITodoController controller)
     {
-        string userId = FirebaseAuthorizationFilter.ExtractRequestToken(context)!;
+        string userId = FirebaseAuthorizationFilter.GetFirebaseUid(context)!;
         
         int newTodoId = await controller.CreateUserTodo(userId, body);
         
@@ -35,7 +35,7 @@ public static class TodoEndpoints
         [FromQuery] int pageSize,
         [FromServices] ITodoController controller)
     {
-        string userId = FirebaseAuthorizationFilter.ExtractRequestToken(context)!;
+        string userId = FirebaseAuthorizationFilter.GetFirebaseUid(context)!;
         
         var todos = await controller.GetUserTodos(userId, page, pageSize);
         
@@ -46,7 +46,7 @@ public static class TodoEndpoints
         [FromRoute] int id,
         [FromServices] ITodoController controller)
     {
-        string userId = FirebaseAuthorizationFilter.ExtractRequestToken(context)!;
+        string userId = FirebaseAuthorizationFilter.GetFirebaseUid(context)!;
         
         TodoDto? todo = await controller.GetTodoById(id, userId);
         
@@ -57,7 +57,7 @@ public static class TodoEndpoints
         [FromRoute] int id,
         [FromServices] ITodoController controller)
     {
-        string userId = FirebaseAuthorizationFilter.ExtractRequestToken(context)!;
+        string userId = FirebaseAuthorizationFilter.GetFirebaseUid(context)!;
 
         int? deletedTodoId = await controller.DeleteUserTodo(userId, id);
         
@@ -68,7 +68,7 @@ public static class TodoEndpoints
         [FromRoute] int id,
         [FromServices] ITodoController controller)
     {
-        string userId = FirebaseAuthorizationFilter.ExtractRequestToken(context)!;
+        string userId = FirebaseAuthorizationFilter.GetFirebaseUid(context)!;
 
         TodoDto? updatedTodo = await controller.ToggleDoneUserTodo(userId, id);
         

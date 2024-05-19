@@ -37,7 +37,7 @@ public class TodoController : ITodoController
     
     public async Task<ICollection<TodoDto>> GetUserTodos(string userId, int page, int pageSize)
     {
-        IReadOnlyCollection<Todo> todos = await _todoRepository.GetUserTodos(userId, page, pageSize);
+        var todos = await _todoRepository.GetUserTodos(userId, page, pageSize);
         
         return todos.Select(todo => new TodoDto
         {
