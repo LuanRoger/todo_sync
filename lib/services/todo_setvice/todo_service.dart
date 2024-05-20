@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:fire_auth_server_client/exceptions/unexpected_response.dart';
+import 'package:fire_auth_server_client/models/net_connection_state.dart';
 import 'package:fire_auth_server_client/models/todo_model.dart';
 import 'package:fire_auth_server_client/providers/firebase_user_token.dart';
 import 'package:fire_auth_server_client/providers/http_engine_provider.dart';
+import 'package:fire_auth_server_client/providers/net_connection_provider.dart';
 import 'package:fire_auth_server_client/services/headers_consts.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/models/create_todo_request.dart';
+import 'package:fire_auth_server_client/storage/offline_todo_cache_provider.dart';
 import 'package:fire_auth_server_client/utils/json_extractor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
@@ -16,7 +19,8 @@ final todoServiceProvider =
 );
 
 class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
-  late final String _userAuthToken;
+  late String _userAuthToken;
+  late NetConnectionState _workingOnConnection;
 
   final String host = "192.168.0.10:7063";
   final String todoPath = "/todos";
@@ -43,6 +47,9 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
   @override
   FutureOr<List<TodoModel>> build() async {
     final firebaseUserToken = ref.watch(firebaseUserTokenProvider);
+    final connection = await ref.watch(netConnectionProvider.future);
+    _workingOnConnection = connection;
+
     if (!firebaseUserToken.hasValue ||
         firebaseUserToken.isLoading ||
         firebaseUserToken.hasError) {
@@ -54,7 +61,18 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
     }
     _userAuthToken = token;
 
-    final todos = await _getUserTodos();
+    List<TodoModel> todos;
+    final offlineProvider = ref.read(offlineTodoCacheProvider.notifier);
+    try {
+      todos = connection.hasConnection
+          ? await _getUserTodos()
+          : await offlineProvider.toCommon();
+    } on Exception {
+      final cachedTodos = await offlineProvider.toCommon();
+      todos = cachedTodos;
+    }
+
+    offlineProvider.addManyWithCommon(todos);
 
     return todos;
   }
@@ -102,6 +120,16 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
     });
   }
 
+  void refresh() {
+    if (!_workingOnConnection.hasConnection) {
+      return;
+    }
+
+    final offlineCache = ref.read(offlineTodoCacheProvider.notifier);
+    offlineCache.restoreCache();
+    ref.invalidateSelf();
+  }
+
   Future<TodoModel> _createTodo(CreateTodoRequest request) async {
     final http = ref.read(httpEngineProvider);
 
@@ -128,6 +156,9 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
       userId: _userAuthToken,
       createdAt: DateTime.now(),
     );
+
+    //TODO: Gravar a ação
+    ref.read(offlineTodoCacheProvider.notifier).addWithCommon(newTodo);
 
     return newTodo;
   }
@@ -168,6 +199,9 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
     final json = getJsonFromResponseBody<Map<String, dynamic>>(response);
     final updatedTodo = TodoModel.fromJson(json);
 
+    //TODO: Gravar a ação
+    ref.read(offlineTodoCacheProvider.notifier).updateWithCommon(updatedTodo);
+
     return updatedTodo;
   }
 
@@ -186,6 +220,9 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
 
     final newTodoId = response.body;
     final infferedTodoId = int.parse(newTodoId);
+
+    //TODO: Gravar a ação
+    ref.read(offlineTodoCacheProvider.notifier).deleteById(id);
 
     return infferedTodoId;
   }
