@@ -1,5 +1,6 @@
 import 'package:fire_auth_server_client/app/pages/home_page/home_page.dart';
 import 'package:fire_auth_server_client/app/pages/login_page.dart';
+import 'package:fire_auth_server_client/app/pages/settings_page.dart';
 import 'package:fire_auth_server_client/app/router/pages_routes.dart';
 import 'package:fire_auth_server_client/app/router/pages_routes_name.dart';
 import 'package:fire_auth_server_client/providers/auth_provider.dart';
@@ -26,7 +27,12 @@ final routerProvider = Provider(
           path: PagesRoutes.home,
           name: PagesRoutesName.home,
           builder: (_, __) => const HomePage(),
-        )
+        ),
+        GoRoute(
+          path: PagesRoutes.settings,
+          name: PagesRoutesName.settings,
+          builder: (_, __) => const SettingsPage(),
+        ),
       ],
       redirect: (context, state) {
         if (auth == null) {
