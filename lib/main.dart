@@ -6,9 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await _initializeFirebase();
 
   runApp(const ProviderScope(child: App()));
 }
+
+Future<void> _initializeFirebase() => Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
