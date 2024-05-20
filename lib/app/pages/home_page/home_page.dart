@@ -4,7 +4,7 @@ import 'package:fire_auth_server_client/app/router/pages_routes_name.dart';
 import 'package:fire_auth_server_client/app/widgets/list_tile/todo_list_tile.dart';
 import 'package:fire_auth_server_client/models/todo_model.dart';
 import 'package:fire_auth_server_client/providers/auth_provider.dart';
-import 'package:fire_auth_server_client/services/todo_setvice/todo_service.dart';
+import 'package:fire_auth_server_client/providers/todo_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +17,7 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final user = ref.read(authProvider);
-    final todos = ref.watch(todoServiceProvider);
+    final todos = ref.watch(todoProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -62,15 +62,11 @@ class HomePage extends ConsumerWidget {
       body: todos.maybeWhen(
         data: (data) => _HomePageBody(
           data: data,
-          onRefresh: () async {
-            ref.read(todoServiceProvider.notifier).refresh();
-
-            return await Future.delayed(const Duration(milliseconds: 700));
-          },
+          onRefresh: () => ref.read(todoProvider.notifier).refresh(),
           onDismissed: (_, todoId) =>
-              ref.read(todoServiceProvider.notifier).deleteTodo(todoId),
+              ref.read(todoProvider.notifier).deleteTodo(todoId),
           onDoneChange: (_, todoId) =>
-              ref.read(todoServiceProvider.notifier).toggleTodo(todoId),
+              ref.read(todoProvider.notifier).toggleTodo(todoId),
         ),
         error: (error, stackTrace) {
           return Center(
@@ -96,7 +92,7 @@ class HomePage extends ConsumerWidget {
             return;
           }
 
-          ref.read(todoServiceProvider.notifier).createTodo(result);
+          ref.read(todoProvider.notifier).createTodo(result);
         },
         child: const Icon(Icons.add),
       ),

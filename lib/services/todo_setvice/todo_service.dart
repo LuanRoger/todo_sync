@@ -1,26 +1,24 @@
 import 'dart:async';
 
 import 'package:fire_auth_server_client/exceptions/unexpected_response.dart';
-import 'package:fire_auth_server_client/models/net_connection_state.dart';
 import 'package:fire_auth_server_client/models/todo_model.dart';
 import 'package:fire_auth_server_client/providers/firebase_user_token.dart';
 import 'package:fire_auth_server_client/providers/http_engine_provider.dart';
 import 'package:fire_auth_server_client/providers/net_connection_provider.dart';
 import 'package:fire_auth_server_client/services/headers_consts.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/models/create_todo_request.dart';
-import 'package:fire_auth_server_client/storage/offline_todo_cache_provider.dart';
+import 'package:fire_auth_server_client/utils/action_model_todo_mapper.dart';
 import 'package:fire_auth_server_client/utils/json_extractor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 
 final todoServiceProvider =
-    AsyncNotifierProvider<TodoServiceNotifier, List<TodoModel>>(
+    AsyncNotifierProvider<TodoServiceNotifier, List<TodoModel>?>(
   TodoServiceNotifier.new,
 );
 
-class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
+class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>?> {
   late String _userAuthToken;
-  late NetConnectionState _workingOnConnection;
 
   final String host = "192.168.0.10:7063";
   final String todoPath = "/todos";
@@ -28,8 +26,8 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
   Map<String, String> get _defaultRequestHeader => {
         HeadersConsts.firebaseAuthHeader: _userAuthToken,
         "Content-Type": "application/json",
-      };
 
+      };
   Uri get _todosRootEndpoint => Uri.http(host, todoPath);
 
   Uri _getUserTodosEndpoint({
@@ -45,34 +43,31 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
   Uri _todoRouteEndpoint({required int id}) => Uri.http(host, "$todoPath/$id");
 
   @override
-  FutureOr<List<TodoModel>> build() async {
+  FutureOr<List<TodoModel>?> build() async {
     final firebaseUserToken = ref.watch(firebaseUserTokenProvider);
     final connection = await ref.watch(netConnectionProvider.future);
-    _workingOnConnection = connection;
 
     if (!firebaseUserToken.hasValue ||
         firebaseUserToken.isLoading ||
         firebaseUserToken.hasError) {
-      return List.empty();
+      return null;
     }
     final token = firebaseUserToken.requireValue;
     if (token == null) {
-      return List.empty();
+      return null;
     }
     _userAuthToken = token;
 
-    List<TodoModel> todos;
-    final offlineProvider = ref.read(offlineTodoCacheProvider.notifier);
-    try {
-      todos = connection.hasConnection
-          ? await _getUserTodos()
-          : await offlineProvider.toCommon();
-    } on Exception {
-      final cachedTodos = await offlineProvider.toCommon();
-      todos = cachedTodos;
+    if (!connection.hasConnection) {
+      return null;
     }
 
-    offlineProvider.addManyWithCommon(todos);
+    List<TodoModel> todos;
+    try {
+      todos = await _getUserTodos();
+    } on Exception {
+      return null;
+    }
 
     return todos;
   }
@@ -87,47 +82,62 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
     );
   }
 
-  Future<void> createTodo(CreateTodoRequest request) async {
+  Future<TodoModel?> createTodo(CreateTodoRequest request) async {
+    final curentTodos = state.value;
+    if (curentTodos == null) {
+      return null;
+    }
+
+    TodoModel? newTodo;
     state = await AsyncValue.guard(() async {
-      final newTodo = await _createTodo(request);
+      final createdTodo = await _createTodo(request);
 
-      final curentTodos = state.requireValue;
-      final newTodos = [...curentTodos, newTodo];
-
+      final newTodos = [...curentTodos, createdTodo];
+      newTodo = createdTodo;
       return newTodos;
     });
+
+    return newTodo;
   }
 
-  Future<void> toggleTodo(int id) async {
+  Future<TodoModel?> toggleTodo(int id) async {
+    final currentTodos = state.value;
+    if (currentTodos == null) {
+      return null;
+    }
+
+    TodoModel? modifiedTodo;
     state = await AsyncValue.guard(() async {
       final updatedTodo = await _toggleTodo(id);
 
+      modifiedTodo = updatedTodo;
       return [
-        for (final todo in state.requireValue)
+        for (final todo in currentTodos)
           if (todo.id == id) updatedTodo else todo
       ];
     });
+
+    return modifiedTodo;
   }
 
-  Future<void> deleteTodo(int id) async {
+  Future<int?> deleteTodo(int id) async {
+    final currentTodos = state.value;
+    if (currentTodos == null) {
+      return null;
+    }
+
+    int? removedTodoId;
     state = await AsyncValue.guard(() async {
       final removedId = await _deleteTodo(id);
 
+      removedTodoId = removedId;
       return [
-        for (final transaction in state.requireValue)
+        for (final transaction in currentTodos)
           if (transaction.id != removedId) transaction
       ];
     });
-  }
 
-  void refresh() {
-    if (!_workingOnConnection.hasConnection) {
-      return;
-    }
-
-    final offlineCache = ref.read(offlineTodoCacheProvider.notifier);
-    offlineCache.restoreCache();
-    ref.invalidateSelf();
+    return removedTodoId;
   }
 
   Future<TodoModel> _createTodo(CreateTodoRequest request) async {
@@ -149,16 +159,11 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
     final newTodoId = response.body;
     final infferedTodoId = int.parse(newTodoId);
 
-    final newTodo = TodoModel(
+    final newTodo = infferTodoModelByCreate(
       id: infferedTodoId,
       description: request.description,
-      done: false,
       userId: _userAuthToken,
-      createdAt: DateTime.now(),
     );
-
-    //TODO: Gravar a ação
-    ref.read(offlineTodoCacheProvider.notifier).addWithCommon(newTodo);
 
     return newTodo;
   }
@@ -199,9 +204,6 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
     final json = getJsonFromResponseBody<Map<String, dynamic>>(response);
     final updatedTodo = TodoModel.fromJson(json);
 
-    //TODO: Gravar a ação
-    ref.read(offlineTodoCacheProvider.notifier).updateWithCommon(updatedTodo);
-
     return updatedTodo;
   }
 
@@ -220,9 +222,6 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>> {
 
     final newTodoId = response.body;
     final infferedTodoId = int.parse(newTodoId);
-
-    //TODO: Gravar a ação
-    ref.read(offlineTodoCacheProvider.notifier).deleteById(id);
 
     return infferedTodoId;
   }

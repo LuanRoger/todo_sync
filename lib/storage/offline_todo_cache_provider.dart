@@ -6,6 +6,14 @@ import 'package:fire_auth_server_client/storage/realm_provider.dart';
 import 'package:fire_auth_server_client/utils/cache_model_common_mappers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+final todoLocalCacheProvider = Provider<List<TodoModel>>((ref) {
+  final offlineCache = ref.watch(offlineTodoCacheProvider);
+
+  final commonModel = offlineCache.map(todoCacheModelToCommon).toList();
+
+  return commonModel;
+});
+
 final offlineTodoCacheProvider =
     NotifierProvider<OfflineTodoCacheProvider, List<TodoCacheModel>>(
   OfflineTodoCacheProvider.new,
@@ -20,22 +28,18 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
     return allTodos.toList();
   }
 
-  Future<List<TodoModel>> toCommon() async {
-    return state.map(todoCacheModelToCommon).toList();
-  }
-
   Future<void> addManyWithCommon(List<TodoModel> models) async {
     final realm = ref.read(realmProvider);
-
-    final toAddModels = models.map(commonToTodoCacheModel);
     final newTodos = List<TodoCacheModel>.empty(growable: true);
 
-    realm.writeAsync(() {
-      for (final model in toAddModels) {
+    await realm.writeAsync(() {
+      for (final model in models) {
+        final todo = commonToTodoCacheModel(model);
         final exists = realm.find<TodoCacheModel>(model.id) != null;
-        realm.add<TodoCacheModel>(model, update: exists);
+
+        realm.add<TodoCacheModel>(todo, update: exists);
         if (!exists) {
-          newTodos.add(model);
+          newTodos.add(todo);
         }
       }
     });
@@ -54,17 +58,20 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
     state = [...state, toAddModel];
   }
 
-  Future<void> updateWithCommon(TodoModel model) async {
-    final updatedModel = commonToTodoCacheModel(model);
+  Future<void> toggleTodo(int id) async {
     final realm = ref.read(realmProvider);
+    final toUpdateModel = realm.find<TodoCacheModel>(id);
+    if (toUpdateModel == null) {
+      return;
+    }
 
     await realm.writeAsync(() {
-      realm.add(updatedModel, update: true);
+      toUpdateModel.done = !toUpdateModel.done;
     });
 
     state = [
       for (final todo in state)
-        if (todo.id != model.id) todo else updatedModel
+        if (toUpdateModel.id == todo.id) toUpdateModel else todo
     ];
   }
 
@@ -85,10 +92,12 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
     ];
   }
 
-  void restoreCache() {
+  Future<void> restoreCache() async {
     final realm = ref.read(realmProvider);
 
-    realm.deleteAll<TodoCacheModel>();
-    ref.invalidateSelf();
+    await realm.writeAsync(() {
+      realm.deleteAll<TodoCacheModel>();
+    });
+    state = List.empty();
   }
 }
