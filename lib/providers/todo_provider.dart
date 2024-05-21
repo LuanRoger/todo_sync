@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:fire_auth_server_client/models/net_connection_state.dart';
 import 'package:fire_auth_server_client/models/todo_model.dart';
 import 'package:fire_auth_server_client/providers/net_connection_provider.dart';
+import 'package:fire_auth_server_client/providers/todo_sync_provider.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/models/create_todo_request.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/todo_service.dart';
 import 'package:fire_auth_server_client/storage/offline_todo_cache_provider.dart';
-import 'package:fire_auth_server_client/utils/action_model_todo_mapper.dart';
+import 'package:fire_auth_server_client/storage/offline_todo_event_sourcing_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final todoProvider = AsyncNotifierProvider<TodoProvider, List<TodoModel>>(
@@ -15,13 +16,14 @@ final todoProvider = AsyncNotifierProvider<TodoProvider, List<TodoModel>>(
 
 class TodoProvider extends AsyncNotifier<List<TodoModel>> {
   late NetConnectionState _workingOnConnection;
-  bool get hasConnection => _workingOnConnection.hasConnection;
 
   @override
   FutureOr<List<TodoModel>> build() async {
     final connection = await ref.watch(netConnectionProvider.future);
     final todoService = await ref.read(todoServiceProvider.future);
     final offlineTodoCache = ref.read(todoLocalCacheProvider);
+    // ignore: unused_local_variable
+    final todoSyncTrigger = ref.read(todoSyncProvider);
     _workingOnConnection = connection;
 
     return _workingOnConnection.hasConnection && todoService != null
@@ -35,13 +37,9 @@ class TodoProvider extends AsyncNotifier<List<TodoModel>> {
 
     final createdTodo = await service.createTodo(request);
     if (createdTodo == null) {
-      final ghostTodo = infferTodoModelByCreate(
-        id: 0,
-        description: request.description,
-        userId: "cache",
-      );
-      await offlineCache.addWithCommon(ghostTodo);
-      //TODO: Add action to event sourcing
+      final offlineEventSourcing =
+          ref.read(offlineTodoEventSourcingProvider.notifier);
+      await offlineEventSourcing.addCreateTodoActionWithCommon(request);
     } else {
       offlineCache.addWithCommon(createdTodo);
     }
@@ -56,7 +54,9 @@ class TodoProvider extends AsyncNotifier<List<TodoModel>> {
     final toggledTodo = await service.toggleTodo(id);
     await offlineCache.toggleTodo(id);
     if (toggledTodo == null) {
-      //TODO: Add action to event sourcing
+      final offlineEventSourcing =
+          ref.read(offlineTodoEventSourcingProvider.notifier);
+      await offlineEventSourcing.addToggleAction(id);
     }
 
     ref.invalidateSelf();

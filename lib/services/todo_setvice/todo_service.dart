@@ -7,6 +7,11 @@ import 'package:fire_auth_server_client/providers/http_engine_provider.dart';
 import 'package:fire_auth_server_client/providers/net_connection_provider.dart';
 import 'package:fire_auth_server_client/services/headers_consts.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/models/create_todo_request.dart';
+import 'package:fire_auth_server_client/storage/models/base/event.dart';
+import 'package:fire_auth_server_client/storage/models/base/event_consumer.dart';
+import 'package:fire_auth_server_client/storage/models/create_todo_event.dart';
+import 'package:fire_auth_server_client/storage/models/delete_todo_event.dart';
+import 'package:fire_auth_server_client/storage/models/toggle_todo_event.dart';
 import 'package:fire_auth_server_client/utils/action_model_todo_mapper.dart';
 import 'package:fire_auth_server_client/utils/json_extractor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +22,8 @@ final todoServiceProvider =
   TodoServiceNotifier.new,
 );
 
-class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>?> {
+class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>?>
+    implements EventConsumer {
   late String _userAuthToken;
 
   final String host = "192.168.0.10:7063";
@@ -26,7 +32,6 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>?> {
   Map<String, String> get _defaultRequestHeader => {
         HeadersConsts.firebaseAuthHeader: _userAuthToken,
         "Content-Type": "application/json",
-
       };
   Uri get _todosRootEndpoint => Uri.http(host, todoPath);
 
@@ -231,5 +236,23 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>?> {
 
     final todoList = jsonMap.map((todo) => TodoModel.fromJson(todo)).toList();
     return todoList;
+  }
+
+  @override
+  Future<bool> consume(Event event) async {
+    switch (event) {
+      case CreateTodoEvent createEvent:
+        final createRequest = createRequestFromEvent(createEvent);
+        final result = await createTodo(createRequest);
+        return result != null;
+      case ToggleTodoEvent toggleEvent:
+        final result = await toggleTodo(toggleEvent.todoId);
+        return result != null;
+      case DeleteTodoEvent deleteEvent:
+        final result = await deleteTodo(deleteEvent.todoId);
+        return result != null;
+      default:
+        return false;
+    }
   }
 }
