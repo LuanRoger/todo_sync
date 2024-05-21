@@ -2,14 +2,18 @@ import 'dart:async';
 
 import 'package:fire_auth_server_client/models/todo_model.dart';
 import 'package:fire_auth_server_client/storage/models/todo_cache_model.dart';
+import 'package:fire_auth_server_client/storage/offline_todo_event_sourcing_provider.dart';
 import 'package:fire_auth_server_client/storage/realm_provider.dart';
 import 'package:fire_auth_server_client/utils/cache_model_common_mappers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final todoLocalCacheProvider = Provider<List<TodoModel>>((ref) {
   final offlineCache = ref.watch(offlineTodoCacheProvider);
+  final offlineEventSourcing =
+      ref.watch(offlineTodoEventSourcingProvider);
 
   final commonModel = offlineCache.map(todoCacheModelToCommon).toList();
+  ref.read(offlineTodoEventSourcingProvider.notifier).project(commonModel);
 
   return commonModel;
 });

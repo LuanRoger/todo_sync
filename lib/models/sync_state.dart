@@ -1,0 +1,4 @@
+enum SyncState {
+  late,
+  sync,
+}
