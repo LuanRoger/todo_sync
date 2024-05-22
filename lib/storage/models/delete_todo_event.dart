@@ -5,6 +5,10 @@ part 'delete_todo_event.realm.dart';
 
 @RealmModel()
 class _DeleteTodoEvent implements Event {
+  @PrimaryKey()
+  @override
+  late String eventId;
+
   late int todoId;
   @override
   late DateTime createdAt;

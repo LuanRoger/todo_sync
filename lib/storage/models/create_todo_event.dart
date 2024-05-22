@@ -5,6 +5,10 @@ part 'create_todo_event.realm.dart';
 
 @RealmModel()
 class _CreateTodoEvent implements Event {
+  @PrimaryKey()
+  @override
+  late String eventId;
+
   late String description;
   @override
   late DateTime createdAt;

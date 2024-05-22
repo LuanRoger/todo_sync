@@ -15,8 +15,10 @@ TodoModel infferTodoModelByCreate({
       createdAt: DateTime.now(),
     );
 
-CreateTodoEvent createEventFromCreateRequest(CreateTodoRequest request) =>
+CreateTodoEvent createEventFromCreateRequest(CreateTodoRequest request,
+        {required String eventId}) =>
     CreateTodoEvent(
+      eventId,
       request.description,
       request.createdAt.toUtc(),
     );

@@ -24,6 +24,7 @@ dependencies:
   realm: ^2.2.1
   connectivity_plus: ^6.0.3
   shared_preferences: ^2.2.3
+  uuid: ^4.4.0
 
 dev_dependencies:
   flutter_test:

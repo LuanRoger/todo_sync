@@ -5,7 +5,7 @@ part 'todo_cache_model.realm.dart';
 @RealmModel()
 class _TodoCacheModel {
   @PrimaryKey()
-  late int cacheId;
+  late String cacheId;
 
   late int id;
   late String description;

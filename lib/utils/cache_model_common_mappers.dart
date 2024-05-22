@@ -9,8 +9,10 @@ TodoModel todoCacheModelToCommon(TodoCacheModel model) => TodoModel(
       createdAt: model.createdAt.toUtc(),
     );
 
-TodoCacheModel commonToTodoCacheModel(TodoModel model, {int? cacheId}) => TodoCacheModel(
-      cacheId ?? model.id,
+TodoCacheModel commonToTodoCacheModel(TodoModel model,
+        {required String cacheId}) =>
+    TodoCacheModel(
+      cacheId,
       model.id,
       model.description,
       model.done,
