@@ -49,19 +49,13 @@ class TodoServiceNotifier extends AsyncNotifier<List<TodoModel>?>
 
   @override
   FutureOr<List<TodoModel>?> build() async {
-    final firebaseUserToken = ref.watch(firebaseUserTokenProvider);
+    final firebaseUserToken = await ref.watch(firebaseUserTokenProvider.future);
     final connection = await ref.watch(netConnectionProvider.future);
 
-    if (!firebaseUserToken.hasValue ||
-        firebaseUserToken.isLoading ||
-        firebaseUserToken.hasError) {
+    if (firebaseUserToken == null) {
       return null;
     }
-    final token = firebaseUserToken.requireValue;
-    if (token == null) {
-      return null;
-    }
-    _userAuthToken = token;
+    _userAuthToken = firebaseUserToken;
 
     if (!connection.hasConnection) {
       return null;

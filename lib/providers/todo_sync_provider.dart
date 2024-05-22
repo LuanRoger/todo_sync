@@ -21,24 +21,23 @@ class TodoSyncProvider extends AsyncNotifier<SyncState> {
     final tryToSync = connection.hasConnection && eventSourcing.isNotEmpty;
 
     if (tryToSync) {
-      _trySyncEvents();
+      await _trySyncEvents();
     }
 
     return tryToSync ? SyncState.late : SyncState.sync;
   }
 
-  void _trySyncEvents() async {
+  Future<void> _trySyncEvents() async {
     final offlineEventSourcing = ref.read(offlineTodoEventSourcingProvider);
 
     if (offlineEventSourcing.isEmpty) {
       return;
     }
 
-    final todoService = ref.read(todoServiceProvider.notifier);
-
     bool hasCompletedSomeEvent = false;
     for (final event in offlineEventSourcing) {
-      final completed = await todoService.consume(event);
+      final completed =
+          await ref.read(todoServiceProvider.notifier).consume(event);
       if (completed) {
         await ref
             .read(offlineTodoEventSourcingProvider.notifier)
@@ -52,7 +51,6 @@ class TodoSyncProvider extends AsyncNotifier<SyncState> {
       ref.invalidate(offlineTodoEventSourcingProvider);
       ref.invalidate(todoLocalCacheProvider);
       ref.invalidate(todoProvider);
-      ref.invalidateSelf();
     }
   }
 }
