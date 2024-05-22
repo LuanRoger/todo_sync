@@ -1,4 +1,5 @@
 import 'package:fire_auth_server_client/providers/net_connection_provider.dart';
+import 'package:fire_auth_server_client/providers/todo_sync_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,7 +17,7 @@ class NetConnectionStateBanner extends ConsumerWidget {
     Text("Conectado (online)"),
   ];
   final _loadingChildren = const [
-    Icon(Icons.cloud_sync),
+    Icon(Icons.cloud_download),
     SizedBox(width: 10),
     Text("Tentando connectar..."),
   ];
@@ -25,12 +26,21 @@ class NetConnectionStateBanner extends ConsumerWidget {
     SizedBox(width: 10),
     Text("Error ao conectar..."),
   ];
+  final _syncChildren = const [
+    Icon(Icons.cloud_sync),
+    SizedBox(width: 10),
+    Text("Sincronizando..."),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final primary = Theme.of(context).colorScheme.primaryContainer;
 
     final connectionState = ref.watch(netConnectionProvider);
+    final syncState = ref.watch(todoSyncProvider);
+
+    final isSyncing =
+        syncState.isLoading || syncState.isReloading || syncState.isRefreshing;
 
     return Container(
       padding: const EdgeInsets.all(10),
@@ -38,8 +48,15 @@ class NetConnectionStateBanner extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: connectionState.when(
-          data: (data) =>
-              data.hasConnection ? _connectedChildren : _noConnectionChildren,
+          data: (data) {
+            if (isSyncing) {
+              return _syncChildren;
+            }
+
+            return data.hasConnection
+                ? _connectedChildren
+                : _noConnectionChildren;
+          },
           loading: () => _loadingChildren,
           error: (_, __) => _errorChildren,
         ),

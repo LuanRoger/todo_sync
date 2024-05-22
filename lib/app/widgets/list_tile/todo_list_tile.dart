@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 class TodoListTile extends StatelessWidget {
-  final Key dismissKey;
   final bool done;
   final String description;
   final void Function(bool)? onDoneChange;
   final void Function(DismissDirection)? onDismissed;
 
   const TodoListTile({
-    required this.dismissKey,
     required this.done,
     required this.description,
     this.onDoneChange,
@@ -19,7 +17,7 @@ class TodoListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: dismissKey,
+      key: UniqueKey(),
       onDismissed: onDismissed,
       background: Container(
         color: Colors.red,

@@ -63,12 +63,12 @@ class HomePage extends ConsumerWidget {
         data: (data) => _HomePageBody(
           data: data,
           onRefresh: () => ref.read(todoProvider.notifier).refresh(),
-          onDismissed: (_, todoId) =>
-              ref.read(todoProvider.notifier).deleteTodo(todoId),
-          onDoneChange: (_, todoId) =>
-              ref.read(todoProvider.notifier).toggleTodo(todoId),
+          onDismissed: (_, todoId) async =>
+              await ref.read(todoProvider.notifier).deleteTodo(todoId),
+          onDoneChange: (_, todoId) async =>
+              await ref.read(todoProvider.notifier).toggleTodo(todoId),
         ),
-        error: (error, stackTrace) {
+        error: (error, _) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -136,7 +136,6 @@ class _HomePageBody extends StatelessWidget {
           final todoId = currentTodo.id;
 
           return TodoListTile(
-            dismissKey: Key(todoId.toString()),
             done: currentTodo.done,
             description: currentTodo.description,
             onDoneChange: (value) => onDoneChange?.call(value, todoId),
