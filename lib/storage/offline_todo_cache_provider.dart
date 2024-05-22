@@ -1,16 +1,17 @@
 import 'dart:async';
 
 import 'package:fire_auth_server_client/models/todo_model.dart';
+import 'package:fire_auth_server_client/providers/uuid_generator_provider.dart';
 import 'package:fire_auth_server_client/storage/models/todo_cache_model.dart';
 import 'package:fire_auth_server_client/storage/offline_todo_event_sourcing_provider.dart';
 import 'package:fire_auth_server_client/storage/realm_provider.dart';
+import 'package:fire_auth_server_client/storage/realm_queries.dart';
 import 'package:fire_auth_server_client/utils/cache_model_common_mappers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final todoLocalCacheProvider = Provider<List<TodoModel>>((ref) {
   final offlineCache = ref.watch(offlineTodoCacheProvider);
-  final offlineEventSourcing =
-      ref.watch(offlineTodoEventSourcingProvider);
+  final offlineEventSourcing = ref.watch(offlineTodoEventSourcingProvider);
 
   final commonModel = offlineCache.map(todoCacheModelToCommon).toList();
   ref.read(offlineTodoEventSourcingProvider.notifier).project(commonModel);
@@ -34,12 +35,15 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
 
   Future<void> addManyWithCommon(List<TodoModel> models) async {
     final realm = ref.read(realmProvider);
+    final uuid = ref.read(uuidGeneratorProvier);
     final newTodos = List<TodoCacheModel>.empty(growable: true);
 
     await realm.writeAsync(() {
       for (final model in models) {
-        final todo = commonToTodoCacheModel(model);
-        final exists = realm.find<TodoCacheModel>(model.id) != null;
+        final todo = commonToTodoCacheModel(model, cacheId: uuid.v1());
+        final queryResult =
+            realm.query<TodoCacheModel>(RealmQueries.whereIdEqual, [model.id]);
+        final exists = queryResult.isNotEmpty;
 
         realm.add<TodoCacheModel>(todo, update: exists);
         if (!exists) {
@@ -52,8 +56,9 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
   }
 
   Future<void> addWithCommon(TodoModel model) async {
-    final toAddModel = commonToTodoCacheModel(model);
     final realm = ref.read(realmProvider);
+    final uuid = ref.read(uuidGeneratorProvier);
+    final toAddModel = commonToTodoCacheModel(model, cacheId: uuid.v1());
 
     await realm.writeAsync(() {
       realm.add<TodoCacheModel>(toAddModel);
@@ -64,7 +69,9 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
 
   Future<void> toggleTodo(int id) async {
     final realm = ref.read(realmProvider);
-    final toUpdateModel = realm.find<TodoCacheModel>(id);
+    final queryResult =
+        realm.query<TodoCacheModel>(RealmQueries.whereIdEqual, [id]);
+    final toUpdateModel = queryResult.isNotEmpty ? queryResult.first : null;
     if (toUpdateModel == null) {
       return;
     }
@@ -81,19 +88,23 @@ class OfflineTodoCacheProvider extends Notifier<List<TodoCacheModel>> {
 
   Future<void> deleteById(int id) async {
     final realm = ref.read(realmProvider);
-    final todo = realm.find<TodoCacheModel>(id);
+    final queryResult =
+        realm.query<TodoCacheModel>(RealmQueries.whereIdEqual, [id]);
+    final todo = queryResult.isNotEmpty ? queryResult.first : null;
     if (todo == null) {
       return;
     }
+    final deletedTodoId = todo.id;
 
+    final newState = List<TodoCacheModel>.from([
+      for (final todo in state)
+        if (deletedTodoId != todo.id) todo
+    ]);
     await realm.writeAsync(() {
       realm.delete<TodoCacheModel>(todo);
     });
 
-    state = [
-      for (final todo in state)
-        if (todo.id != id) todo
-    ];
+    state = newState;
   }
 
   Future<void> restoreCache() async {

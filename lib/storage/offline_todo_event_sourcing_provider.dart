@@ -1,4 +1,5 @@
 import 'package:fire_auth_server_client/models/todo_model.dart';
+import 'package:fire_auth_server_client/providers/uuid_generator_provider.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/models/create_todo_request.dart';
 import 'package:fire_auth_server_client/storage/models/base/event.dart';
 import 'package:fire_auth_server_client/storage/models/create_todo_event.dart';
@@ -38,7 +39,9 @@ class OfflineTodoEventSourcingProvider extends Notifier<List<Event>> {
 
   Future<void> addCreateTodoActionWithCommon(CreateTodoRequest request) async {
     final realm = ref.read(eventsRealmProvider);
-    final createEvent = createEventFromCreateRequest(request);
+    final uuid = ref.read(uuidGeneratorProvier);
+    final createEvent =
+        createEventFromCreateRequest(request, eventId: uuid.v1());
 
     await realm.writeAsync(() {
       realm.add<CreateTodoEvent>(createEvent);
@@ -49,13 +52,26 @@ class OfflineTodoEventSourcingProvider extends Notifier<List<Event>> {
 
   Future<void> addToggleAction(int id) async {
     final realm = ref.read(eventsRealmProvider);
-    final toggleAction = ToggleTodoEvent(id, DateTime.now().toUtc());
+    final uuid = ref.read(uuidGeneratorProvier);
+    final toggleAction = ToggleTodoEvent(uuid.v1(), id, DateTime.now().toUtc());
 
     await realm.writeAsync(() {
       realm.add<ToggleTodoEvent>(toggleAction);
     });
 
     state = [...state, toggleAction];
+  }
+
+  Future<void> deleteTodoAction(int id) async {
+    final realm = ref.read(eventsRealmProvider);
+    final uuid = ref.read(uuidGeneratorProvier);
+    final deleteAction = DeleteTodoEvent(uuid.v1(), id, DateTime.now().toUtc());
+
+    await realm.writeAsync(() {
+      realm.add<DeleteTodoEvent>(deleteAction);
+    });
+
+    state = [...state, deleteAction];
   }
 
   Future<void> hasBeenConsumed(Event event) async {

@@ -69,7 +69,9 @@ class TodoProvider extends AsyncNotifier<List<TodoModel>> {
     final deletedTodo = await service.deleteTodo(id);
     await offlineCache.deleteById(id);
     if (deletedTodo == null) {
-      //TODO: Add action to event sourcing
+      final offlineEventSourcing =
+          ref.read(offlineTodoEventSourcingProvider.notifier);
+      await offlineEventSourcing.deleteTodoAction(id);
     }
 
     ref.invalidateSelf();

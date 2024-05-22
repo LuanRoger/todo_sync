@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fire_auth_server_client/models/sync_state.dart';
 import 'package:fire_auth_server_client/providers/net_connection_provider.dart';
+import 'package:fire_auth_server_client/providers/todo_provider.dart';
 import 'package:fire_auth_server_client/services/todo_setvice/todo_service.dart';
 import 'package:fire_auth_server_client/storage/offline_todo_cache_provider.dart';
 import 'package:fire_auth_server_client/storage/offline_todo_event_sourcing_provider.dart';
@@ -44,12 +45,13 @@ class TodoSyncProvider extends AsyncNotifier<SyncState> {
             .hasBeenConsumed(event);
         hasCompletedSomeEvent = true;
       }
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(seconds: 1));
     }
 
     if (hasCompletedSomeEvent) {
       ref.invalidate(offlineTodoEventSourcingProvider);
       ref.invalidate(todoLocalCacheProvider);
+      ref.invalidate(todoProvider);
       ref.invalidateSelf();
     }
   }
