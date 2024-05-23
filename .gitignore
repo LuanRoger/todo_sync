@@ -54,3 +54,8 @@ TodoAPI/obj/
 *.g.dart
 *.freezed.dart
 *.realm.dart
+
+//Firebase
+
+firebase.json
+*firebase_options.dart
