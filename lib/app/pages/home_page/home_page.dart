@@ -2,11 +2,10 @@ import 'package:fire_auth_server_client/app/consumer_widgets/net_connection_stat
 import 'package:fire_auth_server_client/app/pages/home_page/add_todo_dialog.dart';
 import 'package:fire_auth_server_client/app/router/pages_routes_name.dart';
 import 'package:fire_auth_server_client/app/widgets/list_tile/todo_list_tile.dart';
+import 'package:fire_auth_server_client/app/widgets/placeholders/no_items_placeholder.dart';
 import 'package:fire_auth_server_client/models/todo_model.dart';
-import 'package:fire_auth_server_client/providers/auth_provider.dart';
 import 'package:fire_auth_server_client/providers/todo_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,7 +15,6 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final user = ref.read(authProvider);
     final todos = ref.watch(todoProvider);
 
     return Scaffold(
@@ -27,32 +25,6 @@ class HomePage extends ConsumerWidget {
           child: NetConnectionStateBanner(),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.key),
-            onPressed: () async {
-              final token = await user?.getIdToken();
-              if (token == null) {
-                return;
-              }
-
-              final data = ClipboardData(text: token);
-              Clipboard.setData(data);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Token do usuário copiado para a área de transferencia",
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
-          IconButton(
-            onPressed: () async =>
-                await ref.read(authProvider.notifier).signOut(),
-            icon: const Icon(Icons.exit_to_app),
-          ),
           IconButton(
             onPressed: () => context.pushNamed(PagesRoutesName.settings),
             icon: const Icon(Icons.settings),
@@ -116,15 +88,7 @@ class _HomePageBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error),
-            Text("Não há itens"),
-          ],
-        ),
-      );
+      return const NoItemsPlaceholder();
     }
 
     return RefreshIndicator(
