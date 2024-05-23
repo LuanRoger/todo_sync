@@ -10,9 +10,8 @@ class App extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: "Firebase Auth w/ client and custom server",
+      title: "Todo Sync",
       theme: ThemeData(brightness: Brightness.dark),
-      debugShowCheckedModeBanner: false,
       routerConfig: router,
     );
   }

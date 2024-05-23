@@ -1,5 +1,5 @@
 name: fire_auth_server_client
-description: "A new Flutter project."
+description: "Proprietary synchronization mechanism using Riverpod and Realm."
 
 publish_to: "none"
 
