@@ -37,10 +37,8 @@ class NetConnectionStateBanner extends ConsumerWidget {
     final primary = Theme.of(context).colorScheme.primaryContainer;
 
     final connectionState = ref.watch(netConnectionProvider);
-    final syncState = ref.watch(todoSyncProvider);
-
-    final isSyncing =
-        syncState.isLoading || syncState.isReloading || syncState.isRefreshing;
+    // ignore: unused_local_variable
+    final syncTrigger = ref.watch(todoSyncProvider);
 
     return Container(
       padding: const EdgeInsets.all(10),
@@ -49,6 +47,7 @@ class NetConnectionStateBanner extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: connectionState.when(
           data: (data) {
+            final isSyncing = ref.watch(todoSyncProvider.notifier).isSyncing;
             if (isSyncing) {
               return _syncChildren;
             }

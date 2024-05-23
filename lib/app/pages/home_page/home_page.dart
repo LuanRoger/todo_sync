@@ -98,10 +98,14 @@ class _HomePageBody extends StatelessWidget {
         itemBuilder: (context, index) {
           final currentTodo = data[index];
           final todoId = currentTodo.id;
+          final todoUserId = currentTodo.userId;
+          final isProjection =
+              todoId == 0 && todoUserId == "projection";
 
           return TodoListTile(
             done: currentTodo.done,
             description: currentTodo.description,
+            isProjection: isProjection,
             onDoneChange: (value) => onDoneChange?.call(value, todoId),
             onDismissed: (value) => onDismissed?.call(value, todoId),
           );

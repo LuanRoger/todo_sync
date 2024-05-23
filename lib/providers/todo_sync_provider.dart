@@ -13,6 +13,9 @@ final todoSyncProvider = AsyncNotifierProvider<TodoSyncProvider, SyncState>(
 );
 
 class TodoSyncProvider extends AsyncNotifier<SyncState> {
+  bool _isSyncing = false;
+  bool get isSyncing => _isSyncing;
+
   @override
   FutureOr<SyncState> build() async {
     final connection = await ref.watch(netConnectionProvider.future);
@@ -20,8 +23,9 @@ class TodoSyncProvider extends AsyncNotifier<SyncState> {
 
     final tryToSync = connection.hasConnection && eventSourcing.isNotEmpty;
 
-    if (tryToSync) {
+    if (tryToSync && !_isSyncing) {
       await _trySyncEvents();
+      _isSyncing = false;
     }
 
     return tryToSync ? SyncState.late : SyncState.sync;
@@ -35,6 +39,10 @@ class TodoSyncProvider extends AsyncNotifier<SyncState> {
     }
 
     bool hasCompletedSomeEvent = false;
+    _isSyncing = true;
+    // ignore: unused_local_variable
+    final buildTrigger = await ref.read(todoServiceProvider.future);
+
     for (final event in offlineEventSourcing) {
       final completed =
           await ref.read(todoServiceProvider.notifier).consume(event);
