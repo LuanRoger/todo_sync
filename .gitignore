@@ -59,3 +59,4 @@ TodoAPI/obj/
 
 firebase.json
 *firebase_options.dart
+google-services.json

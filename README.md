@@ -17,6 +17,12 @@ The purpose of this project is to demonstrate how the event sourcing pattern can
 - Docker
 
 ## Screenshots
+| Home Page | Settings Page |
+|-----------|---------------|
+| ![HomePage](https://github.com/LuanRoger/todo_sync/blob/main/images/homepage.png) | ![SettingsPage](https://github.com/LuanRoger/todo_sync/blob/main/images/settings.png) |
+
+### Demo
+![QuickDemo](https://github.com/LuanRoger/todo_sync/blob/main/images/demo.gif)
 
 ## How to run
 
